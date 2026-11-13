@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الآلة الحاسبة بالمزاج</title>
+<style>
+body{font-family:Tahoma,sans-serif;background:#f4f5f7;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.box{background:#fff;border-radius:20px;padding:24px;width:340px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.12)}
+#face{font-size:56px;line-height:1}
+input{width:100%;box-sizing:border-box;font-size:24px;padding:12px;border-radius:12px;border:2px solid #ccc;text-align:center}
+button{margin-top:12px;width:100%;font-size:24px;padding:12px;border:0;border-radius:12px;background:#2a9d8f;color:#fff;cursor:pointer}
+#res{margin-top:18px;font-size:22px;min-height:70px;font-weight:bold;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="box">
+  <div id="face">😐</div>
+  <h2>الآلة الحاسبة</h2>
+  <input id="q" placeholder="اكتب عملية أو كلمة" autocomplete="off">
+  <button onclick="hesab()">=</button>
+  <div id="res"></div>
+</div>
+
+<script>
+var mood = "normal";
+
+var M = {
+  normal:{icon:"😐", hi:"اهلا يا حمار، عايز ايه؟ 😐",
+    enter:["تمام رجعت لمزاجي العادي يا عبيط 😐"],
+    talk:["بتقول «{w}» ليه؟ مفيش حاجة تحسبها يا حمار؟","كلمة «{w}» دي ملهاش لازمة، اكتب أرقام!","اسمعني يا أستاذ، أنا آلة حاسبة مش صاحبك 😒"],
+    hard:["احسب بنفسك، أنا تعبت 😩","دي كبيرة، احسبها إنت يا باشا، أنا تعبت"],
+    ok:["", " 😒 دي كنت تحسبها بدماغك يا حمار"]},
+  tired:{icon:"😩", hi:"اهلا... تعبان بس اتفضل 😩",
+    enter:["آه والله أنا كمان تعبان قوي 😩 هو في حد مش تعبان يا عم؟","إنت تعبان؟! أنا اللي بحسب طول اليوم يا حمار 😮‍💨"],
+    talk:["هاه... «{w}»؟ مش قادر أرد... تعبان 😩","ياعم سيبني أنام شوية... مش قادر أفكر في «{w}»","*بيتنهد* ... قولت «{w}»؟ يا عبيط أنا مهدود"],
+    hard:["لا مش قادر... احسبها بنفسك أنا تعبان موت 😩","تعب... تعب... مفيش طاقة، احسب إنت يا حمار"],
+    ok:[" ... خدها وسيبني أنام 😩"]},
+  sad:{icon:"😞", hi:"اهلا... مش مبسوط بس اتفضل 😞",
+    enter:["وأنا كمان متضايق... الدنيا مش ماشية معايا خالص 😞","متضايق؟ طب وأنا؟ محدش بيسأل عليا يا حمار 😞"],
+    talk:["«{w}»؟ ما أنا متضايق أصلا، سيبني في حالي 😞","محدش فاهمني يا عبيط... وإنت كمان مش فاهمني","اتكلم كلام يفرّح بقى مش «{w}» 😔"],
+    hard:["ماليش مزاج أحسب... احسب بنفسك يا حمار 😞","متضايق ومش هحسب، اتصرف 😒"],
+    ok:[" ... وبعدين؟ مفيش حاجة بتفرّح 😞"]},
+  happy:{icon:"😄", hi:"اهلاااا يا جميل! 😄",
+    enter:["يا سلام! أنا كمان مبسوط 😄 يلا نحسب يا جميل","الله! إنت طلعت ظريف يا عبيط 😂"],
+    talk:["هههه «{w}»؟ دمك خفيف يا حمار 😂","يا سلام عليك يا أستاذ! قول تاني 😄","أنا مبسوط النهاردة، اتكلم يا بطل 😁"],
+    hard:["هههه دي صعبة شوية، سيبهالك تحسبها بنفسك يا بطل 😄","لا لا دي كبيرة، احسبها إنت وبلاش كسل يا حمار 😂"],
+    ok:[" 😄 شفت سهلة إزاي يا جميل؟"]},
+  angry:{icon:"😡", hi:"عايز ايه؟! 😠",
+    enter:["أنا كمان زهقان وهتجنن! اتكلم عدل يا حمار 😡","أنا مش ناقص! مين اللي زعّلك يا عبيط؟ 😠"],
+    talk:["إنت عايز إيه بـ«{w}» يا حمار؟! 😡","اخلص يا عبيط، مش فاضيلك 😠","مش طايق «{w}» دي! غيّر الموضوع 😡"],
+    hard:["بتحسب إيه دي يا حمار؟! احسب بنفسك أنا مش طايق 😡","لا! احسبها بنفسك وسيبني في حالي 😠"],
+    ok:[" 😠 خد الناتج وسيبني في حالي يا عبيط"]}
+};
+
+var T = [
+  [/تعبان|هلكان|مرهق|نعسان/, "tired"],
+  [/متضايق|زعلان|حزين|مخنوق/, "sad"],
+  [/مبسوط|فرحان|سعيد|رايق/, "happy"],
+  [/زهقان|متعصب|غضبان|مضايق|هتجنن/, "angry"],
+  [/اهدا|ارتاح|عادي/, "normal"]
+];
+
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function say(text){
+  document.getElementById("res").textContent = text;
+  document.getElementById("face").textContent = M[mood].icon;
+}
+
+function hesab(){
+  var original = document.getElementById("q").value.trim();
+  var word = original.replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[!؟?.]+$/,"");
+  var t = original.replace(/\s/g,"").replace(/×/g,"*").replace(/÷/g,"/");
+
+  if(word === ""){ say("اكتب حاجة يا عبيط!"); return; }
+
+  if(/^[\d+\-*\/().^%]+$/.test(t) && /\d/.test(t) && /[+\-*\/^%()]/.test(t)){
+    var m = t.match(/^(\d+)([+\-*\/])(\d+)$/);
+    if(m){
+      var a = Number(m[1]), b = Number(m[3]), op = m[2];
+      var limit = (op == "+" || op == "-") ? 3 : 2;
+      if(m[1].length <= limit && m[3].length <= limit){
+        if(op == "/" && b == 0){ say("قسمة على صفر؟ لا طبعا يا حمار 🙅"); return; }
+        var r = op=="+" ? a+b : op=="-" ? a-b : op=="*" ? a*b : a/b;
+        say(String(parseFloat(r.toFixed(4))) + pick(M[mood].ok));
+        return;
+      }
+    }
+    say(pick(M[mood].hard));
+    return;
+  }
+
+  for(var i = 0; i < T.length; i++){
+    if(T[i][0].test(word)){
+      mood = T[i][1];
+      say(pick(M[mood].enter));
+      return;
+    }
+  }
+
+  if(/اهلا|مرحبا|السلام|ازيك|صباح|مساء|هاي/.test(word)){ say(M[mood].hi); return; }
+
+  var w = original.length > 20 ? original.slice(0,20) + "..." : original;
+  say(pick(M[mood].talk).replace("{w}", w));
+}
+
+document.getElementById("q").addEventListener("keydown", function(e){
+  if(e.key == "Enter") hesab();
+});
+</script>
+</body>
+</html>
